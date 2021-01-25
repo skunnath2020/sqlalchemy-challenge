@@ -49,6 +49,7 @@ def welcome():
 
 @app.route("/api/v1.0/precipitation")
 def precipite():
+    """Return a JSON list of precipitations for last 12 months from the dataset."""
     #create the session 
     session = Session(engine)
     # Find the most recent date in the data set.
@@ -73,7 +74,7 @@ def precipite():
 
 @app.route("/api/v1.0/stations")
 def stations():
-    #Return a JSON list of stations from the dataset.
+    """Return a JSON list of stations from the dataset."""
     #create the session 
     session = Session(engine)
 
@@ -96,13 +97,32 @@ def stations():
 
 @app.route("/api/v1.0/tobs")
 def tobs():
+    """ Return a JSON list of temperature observations (TOBS) for the previous year."""
      #create the session 
     session = Session(engine)
+    #Find last year of data
+    recent_date=session.query(measurement.date).order_by(measurement.date.desc()).first()
+    cdate=dt.datetime.strptime(recent_date.date,  "%Y-%m-%d")
+    date_year_earlier=(cdate - dt.timedelta(days=365))
     # Design a query to find the most active stations 
     same_station=session.query(measurement.station,\
         func.count(measurement.station)).\
         group_by(measurement.station).\
         order_by(func.count(measurement.station).desc()).all()
+    most_active_station=same_station[0][0]
+    active_last_year=session.query(measurement.date, measurement.tobs ).\
+        filter(measurement.station == most_active_station).\
+        filter(measurement.date >= date_year_earlier ).\
+        order_by(measurement.tobs.desc()).\
+        all()
+
+    session.close()
+    all_temp=[]
+    for date, temp in active_last_year:
+        temp_dict = {}
+        temp_dict[date]= temp
+        all_temp.append(temp_dict)
+    return jsonify(all_temp)
 
 if __name__ == "__main__":
     app.run(debug=True)
