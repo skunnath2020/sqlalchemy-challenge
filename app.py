@@ -98,7 +98,7 @@ def stations():
 @app.route("/api/v1.0/tobs")
 def tobs():
     """ Return a JSON list of temperature observations (TOBS) for the previous year."""
-     #create the session 
+    #create the session 
     session = Session(engine)
     #Find last year of data
     recent_date=session.query(measurement.date).order_by(measurement.date.desc()).first()
@@ -117,12 +117,35 @@ def tobs():
         all()
 
     session.close()
+    # 
     all_temp=[]
     for date, temp in active_last_year:
         temp_dict = {}
         temp_dict[date]= temp
         all_temp.append(temp_dict)
+
     return jsonify(all_temp)
+@app.route("/api/v1.0/<start_date>")
+def start_date_temp(start_date):
+    """Return a JSON list of the minimum temperature, the average temperature, 
+    and the max temperature for a given start date range."""
+    #create the session 
+    session=Session(engine)
+    tobs_data= session.query(func.min(measurement.tobs),
+        func.max(measurement.tobs),
+        func.avg(measurement.tobs)).\
+        filter(measurement.date >= start_date).\
+        all()
+
+    session.close()
+    temp_start= []
+    for tmin, tmax, tavg in tobs_data:
+        temp_start.append(tmin)
+        temp_start.append(tmax)
+        temp_start.append(tavg)
+    return jsonify(temp_start)
+
+# @app.route("/api/v1.0/<stat_date>/<end_date>")
 
 if __name__ == "__main__":
     app.run(debug=True)
