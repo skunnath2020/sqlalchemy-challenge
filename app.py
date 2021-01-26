@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import datetime as dt
@@ -41,11 +40,11 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end><br/>"
+        f"/api/v1.0/start_date<br/>"
+        f"/api/v1.0/start_date/end_date/<br/>"
+        f"No slash between start_date & end_date/<br/>"
 
     )
-
 
 @app.route("/api/v1.0/precipitation")
 def precipite():
@@ -117,7 +116,7 @@ def tobs():
         all()
 
     session.close()
-    # 
+    
     all_temp=[]
     for date, temp in active_last_year:
         temp_dict = {}
@@ -125,6 +124,7 @@ def tobs():
         all_temp.append(temp_dict)
 
     return jsonify(all_temp)
+
 @app.route("/api/v1.0/<start_date>")
 def start_date_temp(start_date):
     """Return a JSON list of the minimum temperature, the average temperature, 
@@ -138,14 +138,46 @@ def start_date_temp(start_date):
         all()
 
     session.close()
+
     temp_start= []
     for tmin, tmax, tavg in tobs_data:
-        temp_start.append(tmin)
-        temp_start.append(tmax)
-        temp_start.append(tavg)
-    return jsonify(temp_start)
+        temp_dict = {}
+        temp_dict['Min'] = tmin
+        temp_dict['Max'] = tmax
+        temp_dict['Avg'] = tavg
+        temp_start.append(temp_dict)
+    if tmin==None or tmax==None or tavg==None:
+        return f"No data for the given date. Try another one."
+    else:
+        return jsonify(temp_start)
 
-# @app.route("/api/v1.0/<stat_date>/<end_date>")
+# @app.route("/api/v1.0/<start_date>/<end_date>")
+app.route("/api/v1.0/<start_date>/<end_date>")
+def date_temp(start_date, end_date):
+    """Return a JSON list of the minimum temperature, the average temperature, 
+    and the max temperature for a given start date range. 
+    do not add  '/' between the dates """
+    #create the session 
+    session=Session(engine)
+    tobs_data= session.query(func.min(measurement.tobs),
+        func.max(measurement.tobs),
+        func.avg(measurement.tobs)).\
+        filter(measurement.date >= start_date).\
+        filter(measurement.date <= end_date).\
+        all()
 
+    session.close()
+
+    temp_start= []
+    for tmin, tmax, tavg in tobs_data:
+        temp_dict = {}
+        temp_dict['Min'] = tmin
+        temp_dict['Max'] = tmax
+        temp_dict['Avg'] = tavg
+        temp_start.append(temp_dict)
+    if tmin==None or tmax==None or tavg==None:
+        return f"No data for the given date. Try another one."
+    else:
+        return jsonify(temp_start)
 if __name__ == "__main__":
     app.run(debug=True)
