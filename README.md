@@ -16,7 +16,7 @@ To begin, use Python and SQLAlchemy to do basic climate analysis and data explor
 
 * Link Python to the database by creating an SQLAlchemy session.
 
-* **Important** Don't forget to close out your session at the end of your notebook.
+* Notes: Remeber to close out your session at the end of the notebook.
 
 ### Precipitation Analysis
 
